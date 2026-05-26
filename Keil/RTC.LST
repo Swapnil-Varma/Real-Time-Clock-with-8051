@@ -1,0 +1,451 @@
+A51 MACRO ASSEMBLER  RTC                                                                  03/01/2026 21:40:42 PAGE     1
+
+
+MACRO ASSEMBLER A51 V8.00
+OBJECT MODULE PLACED IN RTC.OBJ
+ASSEMBLER INVOKED BY: D:\Softwares\Keil\C51\BIN\A51.EXE RTC.asm SET(SMALL) DEBUG EP
+
+LOC  OBJ            LINE     SOURCE
+
+  0097                 1     SDA EQU P1.7
+  0096                 2     SCL EQU P1.6
+                       3     ;***************************************
+                       4     ;PORT PIN USED FOR SETTING TIME
+  00B4                 5     TOGGLE EQU P3.4 ; SWITCH B
+  00B5                 6     SETTIMELED EQU P3.5 ;LED TO INDICATE IF 8051 IS IN TIMESET MODE
+                       7     
+0000                   8     ORG 0000H
+0000 020100            9     LJMP START
+                      10     
+                      11     
+0003                  12     ORG 0003H
+0003 120300           13             LCALL TIMEUPDATE
+0006 32               14             RETI
+                      15     
+                      16     
+                      17     
+0013                  18     ORG 0013H
+0013 120150           19             LCALL SETTIMEMODE
+0016 32               20             RETI
+                      21     
+                      22     
+                      23             
+0100                  24     ORG 100H
+0100 7C00             25             START: MOV R4, #00H ;HOURS DEFAULT 00H
+0102 7D00             26                    MOV R5, #00H ;MINUTES DEFAULT 00H
+0104 7E00             27                        MOV R6, #00H ;NORMAL MODE
+                      28                        
+                      29                        
+                      30                        
+                      31                    ;SEND START CONDITION
+0106 120520           32                    LCALL STARTC
+                      33                        
+                      34                    ;SEND SLAVE ADDRESS
+0109 74D0             35                    MOV A,#11010000B ;I2C ID 1101000X WHERE X = 0 FOR WRITE OPERATION
+010B 120540           36                    LCALL SEND
+                      37                    ;SLAVE ACK SKIPPED STORED IN C
+                      38                        
+                      39                ;SEND DATA
+010E 7407             40                    MOV A, #00000111B ; SQUARE O/P REGISTER SELECT
+0110 120540           41                    LCALL SEND
+0113 7410             42                    MOV A, #10H ;INIT 1HZ SQUARE WAVE O/P
+0115 120540           43                    LCALL SEND
+                      44                        
+0118 120530           45                    LCALL STOP
+                      46                        
+                      47                        
+011B 75A885           48                        MOV IE, #85H ;ENABLE INT0 AND INT1 INTERRUPT PRIORITY ONLY
+011E 758805           49                        MOV TCON, #05H ;ENABLE ENTERNAL INTERRUPT IN EDGE TRIGERRED MODE
+                      50                        
+                      51                        
+0121 020260           52                        LJMP DISPLAY
+                      53     
+                      54     
+0150                  55     ORG 150H
+0150                  56             SETTIMEMODE:
+0150 BE050A           57                         CJNE R6, #05H, OPTION ;CHECK WHICH MODE 8051 WAS OPERATING IN
+                      58                         
+A51 MACRO ASSEMBLER  RTC                                                                  03/01/2026 21:40:42 PAGE     2
+
+                      59             ;---------------------Return to normal mode-----------------------------
+0153 7E00             60                             MOV R6, #00H
+0155 120400           61                             LCALL RTCTIMEUPDATE
+0158 D2A8             62                 SETB EX0 ;ENABLE RTC INTERRUPTING 8051
+015A D2B5             63                         SETB SETTIMELED ;DISABLE SET TIME INDICATOR
+015C 22               64                         RET
+                      65             
+                      66             ;-----------------------Time set Mode-----------------------------------
+015D 30B453           67             OPTION: JNB TOGGLE, NEXTBIT ;IF SWTICH B IS ON, GO TO NEXT TIME BIT
+                      68             
+                      69             
+                      70             ;---------------------------------------------------
+0160 BE010C           71                              CJNE R6, #01H, SETHRLSB ;CHECK WHICH TIME BIT IS BEING SET
+0163 EC               72                                              MOV A, R4 ;COPY CURRENT HOUR DATA IN R4
+0164 54F0             73                                      ANL A, #0F0H ;IGNORE LOWER NIBBLE
+0166 2410             74                                      ADD A, #10H ;ADD 1 TO UPPER NIBBLE 
+0168 B43002           75                                      CJNE A, #30H, SKIPHRMSBRESET ;HOUR MSB CAN BE ONLY BETWEEN
+                              0 - 2 [24HR CLOCK]
+016B 7400             76                                      MOV A, #00H
+016D FC               77      SKIPHRMSBRESET:     MOV R4, A
+016E 22               78                          RET
+                      79      
+                      80      
+                      81         ;---------------------------------------------------
+016F BE021A           82       SETHRLSB:          CJNE R6, #02H, SETMINMSB ;CHECK WHICH TIME BIT IS BEING SET
+0172 EC               83                          MOV A, R4
+0173 54F0             84                                      ANL A, #0F0H
+0175 FB               85                                      MOV R3, A ;FOR BACKING UP THE HOUR MSB BIT SET ALREADY
+0176 EC               86                                      MOV A, R4
+0177 540F             87                                      ANL A, #0FH
+0179 04               88                                      INC A
+017A BB2007           89                                              CJNE R3, #20H, CHKFORHRMSB2 ;CHECK IS THE HOUR MSB
+                              IS 1 OR 2
+017D B40409           90                                      CJNE A, #04H, SKIPHRLSBRESET ;IF HOUR MSB IS 2, HOUR LSB C
+                             AN BE BETWEEN 0 - 3
+0180 7400             91                          MOV A, #00H
+0182 8005             92                          JMP SKIPHRLSBRESET                     
+                      93                                              
+0184 B40A02           94     CHKFORHRMSB2:        CJNE A, #0AH, SKIPHRLSBRESET ;IF HOUR MSB IS 0 OR 1, HOUR LSB CAN BE B
+                             ETWEEN 0 - 9
+0187 7400             95                                              MOV A, #00H
+                      96     
+0189 4B               97     SKIPHRLSBRESET:      ORL A, R3 
+018A FC               98                          MOV R4, A
+018B 22               99                                              RET
+                     100                              
+                     101             ;--------------------------------------------------
+018C BE0311          102      SETMINMSB:          CJNE R6, #03H, SETMINLSB
+018F ED              103                          MOV A, R5
+0190 540F            104                                              ANL A, #0FH
+0192 FB              105                                              MOV R3, A
+0193 ED              106                                              MOV A, R5
+0194 54F0            107                                      ANL A, #0F0H
+0196 2410            108                                      ADD A, #10H
+0198 B46002          109                                      CJNE A, #60H, SKIPMINMSBRESET ;IF MIN MSB CAN BE BETWEEN 0
+                              - 5
+019B 7400            110                                      MOV A, #00H
+019D 4B              111      SKIPMINMSBRESET:        ORL A, R3
+019E FD              112                          MOV R5, A
+019F 22              113                          RET
+                     114                             
+                     115                     
+                     116         ;-------------------------------------------------          
+01A0 BE040F          117      SETMINLSB:          CJNE R6, #04H, RETURNMINLSB
+01A3 ED              118                          MOV A, R5
+01A4 54F0            119                                      ANL A, #0F0H
+A51 MACRO ASSEMBLER  RTC                                                                  03/01/2026 21:40:42 PAGE     3
+
+01A6 FB              120                                      MOV R3, A
+01A7 ED              121                                      MOV A, R5
+01A8 540F            122                                      ANL A, #0FH
+01AA 04              123                                      INC A
+01AB B40A02          124                                      CJNE A, #0AH, SKIPMINLSBRESET ;MIN LSB CAN BE BETWEEN 0 - 
+                             9
+01AE 7400            125                          MOV A, #00H
+01B0 4B              126     SKIPMINLSBRESET:     ORL A, R3
+01B1 FD              127                          MOV R5, A
+                     128                  
+                     129                              
+01B2 22              130     RETURNMINLSB:    RET
+                     131                             
+                     132                     ;----------------------------
+01B3 0E              133        NEXTBIT: INC R6 ; INCREMENT MODE [NORMAL MODE 00H, HOUR MSB 01H, HOUR LSB 02H, MIN MSB 0
+                             3H, MIN LSB 04]
+                     134                 ;WHEN R6 > 04H NEXT EX1 INTERRUPT MAKES R6 -> 00H AND 8051 COMES OUT OF TIME SE
+                             T MODE
+01B4 C2A8            135                     CLR EX0 ;DISABLE RTC INTERRUPTING 8051
+01B6 C2B5            136                             CLR SETTIMELED ;ENABLE SET TIME INDICATOR
+01B8 22              137                             RET
+                     138             
+                     139             
+0260                 140     ORG 260H
+0260                 141             DISPLAY:  
+                     142                       
+                     143                       
+0260 EC              144         HOURMSB:  MOV A, R4
+0261 C4              145                               SWAP A
+0262 5403            146                               ANL A, #03H ; 0000 00XX
+0264 4410            147                               ORL A, #10H ; ENABLE ONLY HOUR MSB DISPLAY
+0266 F5A0            148                               MOV P2, A
+0268 1202F0          149                               LCALL MICRO_DELAY
+                     150                               
+026B BE0102          151                               CJNE R6, #01H, HOURLSB ;IF IN TIME SET MODE, ONLY SHOW THE SETTIN
+                             G TIME ON 7SEG DISPLAY
+026E 80F0            152                               SJMP DISPLAY
+                     153                              
+                     154                               
+0270 EC              155         HOURLSB:  MOV A, R4
+0271 540F            156                               ANL A, #0FH
+0273 4420            157                               ORL A, #20H ; ENABLE ONLY HOUR LSB DISPLAY
+0275 F5A0            158                               MOV P2, A
+0277 1202F0          159                               LCALL MICRO_DELAY
+                     160                   
+027A BE0202          161                               CJNE R6, #02H, MINMSB ;IF IN TIME SET MODE, ONLY SHOW THE SETTING
+                              TIME ON 7SEG DISPLAY
+027D 80E1            162                               SJMP DISPLAY
+                     163                               
+                     164                               
+                     165                               
+027F ED              166              MINMSB:  MOV A, R5
+0280 C4              167                               SWAP A
+0281 540F            168                               ANL A, #0FH
+0283 4440            169                               ORL A, #40H ; ENABLE ONLY MIN MSB DISPLAY
+0285 F5A0            170                               MOV P2, A
+0287 1202F0          171                               LCALL MICRO_DELAY
+                     172                               
+028A BE0302          173                               CJNE R6, #03H, MINLSB ;IF IN TIME SET MODE, ONLY SHOW THE SETTING
+                              TIME ON 7SEG DISPLAY
+028D 80D1            174                               SJMP DISPLAY
+                     175                               
+                     176                               
+                     177                               
+028F ED              178              MINLSB:  MOV A, R5
+0290 540F            179                               ANL A, #0FH
+A51 MACRO ASSEMBLER  RTC                                                                  03/01/2026 21:40:42 PAGE     4
+
+0292 4480            180                               ORL A, #80H ; ENABLE ONLY MIN LSB DISPLAY
+0294 F5A0            181                               MOV P2, A
+0296 1202F0          182                               LCALL MICRO_DELAY
+                     183                               
+0299 80C5            184                               SJMP DISPLAY
+                     185     
+                     186     
+02F0                 187     ORG 2F0H ; 5US DELAY
+02F0 7A05            188     MICRO_DELAY: MOV R2, #05H
+02F2 DAFE            189         HERE:  DJNZ R2, HERE
+02F4 22              190                    RET
+                     191     
+                     192     
+                     193     ;*****************************************
+                     194     ; WRITE TO SLAVE DEVICE WITH SLAVE ADDRESS 1101000XB
+                     195     ;*****************************************
+0300                 196     ORG 300H
+                     197             
+0300                 198             TIMEUPDATE:
+                     199             
+                     200                        
+                     201                    ; SEND START CONDITION
+0300 120520          202                    LCALL STARTC
+                     203                        
+                     204                    ; SEND SLAVE ADDRESS
+0303 74D0            205                    MOV A,#11010000B ;I2C ID 1101000X WHERE X = 0 FOR WRITE OPERATION
+0305 120540          206                    LCALL SEND
+0308 7401            207                        MOV A, #01H ;INIT RTC POINTER TO MINUTES REGISTER
+030A 120540          208                        LCALL SEND
+030D 120530          209                        LCALL STOP
+                     210                        
+                     211                        
+                     212                    ; SEND START CONDITION
+0310 120520          213                    LCALL STARTC
+                     214                    ; SEND SLAVE ADDRESS WITH READ BIT SET
+0313 74D1            215                    MOV A,#11010001B ;I2C ID 1101000X WHERE X = 1 FOR READ OPERATION
+0315 120540          216                    LCALL SEND
+                     217                    ; READ ONE BYTE
+0318 120620          218                    LCALL RECV
+031B FD              219                        MOV R5, A ;UPDATE MINUTES REGISTER
+                     220                    ; SEND ACK
+031C 120600          221                    LCALL ACK
+                     222                    ; READ LAST BYTE
+031F 120620          223                    LCALL RECV
+0322 FC              224                        MOV R4, A ;UPDATE MINUTES REGISTER
+                     225                   ; SEND NAK FOR LAST BYTE TO INDICATE
+                     226                       
+                     227                    ; END OF TRANSMISSION
+0323 120610          228                    LCALL NAK
+                     229                    ; SEND STOP CONDITION
+0326 120530          230                    LCALL STOP
+                     231                        
+0329 E9              232                        MOV A, R1 ;RESTORE ACCUMULATOR DATA
+032A 22              233             RET
+                     234      
+                     235      
+0400                 236      ORG 400H
+0400                 237              RTCTIMEUPDATE:
+                     238                    ;SEND START CONDITION
+0400 120520          239                    LCALL STARTC
+                     240                        
+                     241                    ;SEND SLAVE ADDRESS
+0403 74D0            242                    MOV A,#11010000B ;I2C ID 1101000X WHERE X = 0 FOR WRITE OPERATION
+0405 120540          243                    LCALL SEND
+                     244                    ;SLAVE ACK SKIPPED STORED IN C
+                     245                        
+A51 MACRO ASSEMBLER  RTC                                                                  03/01/2026 21:40:42 PAGE     5
+
+                     246                ;SEND DATA
+0408 7400            247                    MOV A, #00000000B ; SECONDS REGISTER SELECT
+040A 120540          248                    LCALL SEND
+040D 7400            249                    MOV A, #00H ; MAKE SECONDS REGISTER 00
+040F 120540          250                    LCALL SEND
+0412 ED              251                        MOV A, R5 ;UPDATE RTC MINUTES REGISTER
+0413 120540          252                        LCALL SEND
+0416 EC              253                        MOV A, R4 ;UPDATE RTC HOURS REGISTER
+0417 4480            254                        ORL A, #80H ;SET 24 HR BIT IN RTC FOR 24 HR OPERATION MODE
+0419 120540          255                        LCALL SEND
+                     256                        
+041C 120530          257                    LCALL STOP
+                     258                        
+041F 22              259                        RET
+                     260      
+                     261     ;****************************************
+                     262     ;RESTART CONDITION FOR I2C COMMUNICATION | [NOT USED]
+                     263     ;****************************************
+                     264     
+0510                 265     ORG 510H
+0510                 266     RSTART:
+0510 C296            267             CLR SCL
+0512 D297            268             SETB SDA
+0514 D296            269             SETB SCL
+0516 C297            270             CLR SDA
+0518 22              271             RET
+                     272      
+                     273      
+                     274     ;****************************************
+                     275     ;START CONDITION FOR I2C COMMUNICATION
+                     276     ;****************************************
+                     277     
+0520                 278     ORG 520H
+0520                 279     STARTC:
+0520 D296            280             SETB SCL
+0522 C297            281             CLR SDA
+0524 C296            282             CLR SCL
+0526 22              283             RET
+                     284      
+                     285      
+                     286     ;*****************************************
+                     287     ;STOP CONDITION FOR I2C BUS
+                     288     ;*****************************************
+                     289     
+0530                 290     ORG 530H
+0530                 291     STOP:
+0530 C296            292             CLR SCL
+0532 C297            293             CLR SDA
+0534 D296            294             SETB SCL
+0536 D297            295             SETB SDA
+0538 22              296             RET
+                     297      
+                     298      
+                     299     ;*****************************************
+                     300     ;SENDING DATA TO SLAVE ON I2C BUS
+                     301     ;*****************************************
+                     302     
+0540                 303     ORG 540H
+0540                 304     SEND:
+0540 F9              305         MOV R1, A ;BACKUP ACCUMULATOR DATA
+                     306             
+0541 7F08            307             MOV R7,#08
+0543                 308     BACK:
+0543 C296            309             CLR SCL
+0545 33              310             RLC A
+0546 9297            311             MOV SDA,C
+A51 MACRO ASSEMBLER  RTC                                                                  03/01/2026 21:40:42 PAGE     6
+
+0548 D296            312             SETB SCL
+054A DFF7            313             DJNZ R7,BACK
+054C C296            314             CLR SCL
+054E D297            315             SETB SDA
+0550 D296            316             SETB SCL
+0552 A297            317             MOV C, SDA
+0554 C296            318             CLR SCL
+                     319             
+0556 E9              320             MOV A, R1 ;RESTORE ACCUMULATOR DATA
+                     321             
+0557 22              322             RET
+                     323      
+                     324      
+                     325     ;*****************************************
+                     326     ;ACK AND NAK FOR I2C BUS
+                     327     ;*****************************************
+                     328     
+0600                 329     ORG 600H
+0600                 330     ACK:
+0600 C297            331             CLR SDA
+0602 D296            332             SETB SCL
+0604 C296            333             CLR SCL
+0606 D297            334             SETB SDA
+0608 22              335             RET
+                     336      
+0610                 337     ORG 610H
+0610                 338     NAK:
+0610 D297            339             SETB SDA
+0612 D296            340             SETB SCL
+0614 C296            341             CLR SCL
+0616 D296            342             SETB SCL
+0618 22              343             RET
+                     344      
+                     345      
+                     346     ;*****************************************
+                     347     ;RECEIVING DATA FROM SLAVE ON I2C BUS
+                     348     ;*****************************************
+                     349     
+0620                 350     ORG 620H
+0620 F9              351     RECV: MOV R1, A ;BACKUP ACCUMULATOR DATA, RESTORED AT THE END OF TIMEUPDATE CALL SUBROUTINE
+                     352     
+0621 7F08            353             MOV R7,#08
+0623                 354     BACK2:
+0623 C296            355             CLR SCL
+0625 D296            356             SETB SCL
+0627 A297            357             MOV C,SDA
+0629 33              358             RLC A
+062A DFF7            359             DJNZ R7,BACK2
+062C C296            360             CLR SCL
+062E D297            361             SETB SDA
+                     362             
+0630 22              363             RET
+                     364             
+                     365             
+                     366     END
+A51 MACRO ASSEMBLER  RTC                                                                  03/01/2026 21:40:42 PAGE     7
+
+SYMBOL TABLE LISTING
+------ ----- -------
+
+
+N A M E             T Y P E  V A L U E   ATTRIBUTES
+
+ACK. . . . . . . .  C ADDR   0600H   A   
+BACK . . . . . . .  C ADDR   0543H   A   
+BACK2. . . . . . .  C ADDR   0623H   A   
+CHKFORHRMSB2 . . .  C ADDR   0184H   A   
+DISPLAY. . . . . .  C ADDR   0260H   A   
+EX0. . . . . . . .  B ADDR   00A8H.0 A   
+HERE . . . . . . .  C ADDR   02F2H   A   
+HOURLSB. . . . . .  C ADDR   0270H   A   
+HOURMSB. . . . . .  C ADDR   0260H   A   
+IE . . . . . . . .  D ADDR   00A8H   A   
+MICRO_DELAY. . . .  C ADDR   02F0H   A   
+MINLSB . . . . . .  C ADDR   028FH   A   
+MINMSB . . . . . .  C ADDR   027FH   A   
+NAK. . . . . . . .  C ADDR   0610H   A   
+NEXTBIT. . . . . .  C ADDR   01B3H   A   
+OPTION . . . . . .  C ADDR   015DH   A   
+P1 . . . . . . . .  D ADDR   0090H   A   
+P2 . . . . . . . .  D ADDR   00A0H   A   
+P3 . . . . . . . .  D ADDR   00B0H   A   
+RECV . . . . . . .  C ADDR   0620H   A   
+RETURNMINLSB . . .  C ADDR   01B2H   A   
+RSTART . . . . . .  C ADDR   0510H   A   
+RTCTIMEUPDATE. . .  C ADDR   0400H   A   
+SCL. . . . . . . .  B ADDR   0090H.6 A   
+SDA. . . . . . . .  B ADDR   0090H.7 A   
+SEND . . . . . . .  C ADDR   0540H   A   
+SETHRLSB . . . . .  C ADDR   016FH   A   
+SETMINLSB. . . . .  C ADDR   01A0H   A   
+SETMINMSB. . . . .  C ADDR   018CH   A   
+SETTIMELED . . . .  B ADDR   00B0H.5 A   
+SETTIMEMODE. . . .  C ADDR   0150H   A   
+SKIPHRLSBRESET . .  C ADDR   0189H   A   
+SKIPHRMSBRESET . .  C ADDR   016DH   A   
+SKIPMINLSBRESET. .  C ADDR   01B0H   A   
+SKIPMINMSBRESET. .  C ADDR   019DH   A   
+START. . . . . . .  C ADDR   0100H   A   
+STARTC . . . . . .  C ADDR   0520H   A   
+STOP . . . . . . .  C ADDR   0530H   A   
+TCON . . . . . . .  D ADDR   0088H   A   
+TIMEUPDATE . . . .  C ADDR   0300H   A   
+TOGGLE . . . . . .  B ADDR   00B0H.4 A   
+
+
+REGISTER BANK(S) USED: 0 
+
+
+ASSEMBLY COMPLETE.  0 WARNING(S), 0 ERROR(S)

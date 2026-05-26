@@ -1,0 +1,84 @@
+<html>
+<body>
+<pre>
+<h1>µVision3 Build Log</h1>
+<h2>Project:</h2>
+D:\Downloads\RTC.uv2
+Project File Date:  03/01/2026
+
+<h2>Output:</h2>
+Build target 'Target 1'
+assembling RTC.asm...
+linking...
+Program Size: data=8.0 xdata=0 code=1585
+creating hex file from "RTC"...
+"RTC" - 0 Error(s), 0 Warning(s).
+Build target 'Target 1'
+assembling RTC.asm...
+RTC.asm(263): error A45: UNDEFINED SYMBOL (PASS-2)
+RTC.asm(264): error A45: UNDEFINED SYMBOL (PASS-2)
+RTC.asm(265): error A45: UNDEFINED SYMBOL (PASS-2)
+RTC.asm(266): error A45: UNDEFINED SYMBOL (PASS-2)
+RTC.asm(276): error A45: UNDEFINED SYMBOL (PASS-2)
+RTC.asm(277): error A45: UNDEFINED SYMBOL (PASS-2)
+RTC.asm(278): error A45: UNDEFINED SYMBOL (PASS-2)
+RTC.asm(288): error A45: UNDEFINED SYMBOL (PASS-2)
+RTC.asm(289): error A45: UNDEFINED SYMBOL (PASS-2)
+RTC.asm(290): error A45: UNDEFINED SYMBOL (PASS-2)
+RTC.asm(291): error A45: UNDEFINED SYMBOL (PASS-2)
+RTC.asm(305): error A45: UNDEFINED SYMBOL (PASS-2)
+RTC.asm(307): error A45: UNDEFINED SYMBOL (PASS-2)
+RTC.asm(308): error A45: UNDEFINED SYMBOL (PASS-2)
+RTC.asm(310): error A45: UNDEFINED SYMBOL (PASS-2)
+RTC.asm(311): error A45: UNDEFINED SYMBOL (PASS-2)
+RTC.asm(312): error A45: UNDEFINED SYMBOL (PASS-2)
+RTC.asm(313): error A45: UNDEFINED SYMBOL (PASS-2)
+RTC.asm(314): error A45: UNDEFINED SYMBOL (PASS-2)
+RTC.asm(327): error A45: UNDEFINED SYMBOL (PASS-2)
+RTC.asm(328): error A45: UNDEFINED SYMBOL (PASS-2)
+RTC.asm(329): error A45: UNDEFINED SYMBOL (PASS-2)
+RTC.asm(330): error A45: UNDEFINED SYMBOL (PASS-2)
+RTC.asm(335): error A45: UNDEFINED SYMBOL (PASS-2)
+RTC.asm(336): error A45: UNDEFINED SYMBOL (PASS-2)
+RTC.asm(337): error A45: UNDEFINED SYMBOL (PASS-2)
+RTC.asm(338): error A45: UNDEFINED SYMBOL (PASS-2)
+RTC.asm(351): error A45: UNDEFINED SYMBOL (PASS-2)
+RTC.asm(352): error A45: UNDEFINED SYMBOL (PASS-2)
+RTC.asm(353): error A45: UNDEFINED SYMBOL (PASS-2)
+RTC.asm(356): error A45: UNDEFINED SYMBOL (PASS-2)
+RTC.asm(357): error A45: UNDEFINED SYMBOL (PASS-2)
+Target not created
+Build target 'Target 1'
+assembling RTC.asm...
+linking...
+Program Size: data=8.0 xdata=0 code=1585
+creating hex file from "RTC"...
+"RTC" - 0 Error(s), 0 Warning(s).
+Build target 'Target 1'
+assembling RTC.asm...
+linking...
+Program Size: data=8.0 xdata=0 code=1585
+creating hex file from "RTC"...
+"RTC" - 0 Error(s), 0 Warning(s).
+Build target 'Target 1'
+assembling RTC.asm...
+linking...
+Program Size: data=8.0 xdata=0 code=1585
+creating hex file from "RTC"...
+"RTC" - 0 Error(s), 0 Warning(s).
+Build target 'Target 1'
+assembling RTC.asm...
+RTC.asm(1): error A9: SYNTAX ERROR
+Target not created
+Build target 'Target 1'
+assembling RTC.asm...
+linking...
+Program Size: data=8.0 xdata=0 code=1585
+creating hex file from "RTC"...
+"RTC" - 0 Error(s), 0 Warning(s).
+Build target 'Target 1'
+assembling RTC.asm...
+linking...
+Program Size: data=8.0 xdata=0 code=1585
+creating hex file from "RTC"...
+"RTC" - 0 Error(s), 0 Warning(s).
